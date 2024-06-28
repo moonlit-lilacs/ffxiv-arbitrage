@@ -1,0 +1,72 @@
+{
+    "items": {
+        "5367": {
+            "listings": [
+                {
+                    "pricePerUnit": 70,
+                    "quantity": 1,
+                    "total": 70,
+                    "tax": 3
+                },
+                {
+                    "pricePerUnit": 80,
+                    "quantity": 1,
+                    "total": 80,
+                    "tax": 4
+                },
+                {
+                    "pricePerUnit": 89,
+                    "quantity": 5,
+                    "total": 445,
+                    "tax": 22
+                },
+                {
+                    "pricePerUnit": 89,
+                    "quantity": 2,
+                    "total": 178,
+                    "tax": 8
+                },
+                {
+                    "pricePerUnit": 90,
+                    "quantity": 2,
+                    "total": 180,
+                    "tax": 9
+                }
+            ]
+        },
+        "5368": {
+            "listings": [
+                {
+                    "pricePerUnit": 24,
+                    "quantity": 14,
+                    "total": 336,
+                    "tax": 16
+                },
+                {
+                    "pricePerUnit": 30,
+                    "quantity": 99,
+                    "total": 2970,
+                    "tax": 148
+                },
+                {
+                    "pricePerUnit": 30,
+                    "quantity": 99,
+                    "total": 2970,
+                    "tax": 148
+                },
+                {
+                    "pricePerUnit": 30,
+                    "quantity": 99,
+                    "total": 2970,
+                    "tax": 148
+                },
+                {
+                    "pricePerUnit": 30,
+                    "quantity": 86,
+                    "total": 2580,
+                    "tax": 129
+                }
+            ]
+        }
+    }
+}
