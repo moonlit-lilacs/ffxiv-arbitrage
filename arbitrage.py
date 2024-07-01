@@ -9,17 +9,25 @@ import time
 #revisit this and add some more data in. Because each GET request to Universalis is limited to a maximum of one World (or datacenter,
 #but we'll explore that later), we can let the main program handle adding this dictionary as the value to the key of the world name, letting
 #us traverse a master dictionary to compare prices. If it's organized more easily to query a data-center, we'll consider that.
-def priceBuilder(jsonObject):
+def priceBuilder(jsonObject, items):
     priceDict = {}
     keys = list(jsonObject.keys())
     if (keys[0] == "items"):
+        for item in items:
+            if not item in jsonObject['items']:
+                priceDict[item] = {"quantity" : 0, "cost" : 0, "avgCost" : 0}
         for item_id, item in jsonObject['items'].items():
             units = 0
             cost = 0
+            if(len(item['listings']) == 0):
+                priceDict[item_id] = {"quantity" : 0, "cost" : 0, "avgCost" : 0}
             for listing in item['listings']:
                 units += listing['quantity']
                 cost += listing['quantity']*listing['pricePerUnit']+listing['tax']
-            priceDict[item_id] = {"quantity" : units, "cost" : cost, "avgCost" : cost/units}
+            if (units > 0):
+                priceDict[item_id] = {"quantity" : units, "cost" : cost, "avgCost" : cost/units}
+            else:
+                priceDict[item_id] = {"quantity" : 0, "cost" : 0, "avgCost" : 0}
     else:
         units = 0
         cost = 0
@@ -45,7 +53,7 @@ def buildWorld(world, items):
     except json.JSONDecodeError as e:
         print(f"Request error {e}")
 
-    return priceBuilder(data)
+    return priceBuilder(data, items)
 
 def get_user_int(prompt, default_value=-1):
     while True:
@@ -59,12 +67,35 @@ def get_user_int(prompt, default_value=-1):
         except ValueError:
             print("Not an integer")
 
+def arbitrage(dict, items, homeWorld):
+    arbit = {}
+    for item in items:
+        data = []
+        homeItemCost = float(dict[homeWorld][item]['avgCost'])
+        if homeItemCost == 0:
+            pass
+        for world in dict:
+            if world == homeWorld:
+                pass
+            else:
+                worldItemCost = float(dict[world][item]['avgCost'])
+                if (worldItemCost) == 0:
+                    continue
+                if worldItemCost < homeItemCost:
+                    profit = homeItemCost-worldItemCost
+                    #print(f"Found {item} in {world} where {item} costs {dict[world][item]['avgCost']} on {world} and {str(homeItemCost)} on {homeWorld}, for an arbitrage of {str(profit)}")
+                    data.append((world, worldItemCost, profit))
+        arbit[item] = sorted(data, key=lambda x : x[2])
+    return arbit
+
 
 def main():
-
     masterDict = {}
-    worlds = ["Faerie","Cactuar","Gilgamesh","Adamantoise"]
-    items = ["5367", "5368", "5373"]
+    worlds = ["Seraph","Kraken","Cuchulainn","Halicarnassus", "Maduin"]
+    items = ["5367", "5368", "5373", "5380", "5381", "5383", "5384", "5385", "5386", "5387", "5388", "5389", "5390", "5391", "5392", "5393", "5394"]
+    homeWorld = "Seraph"
+
+
     for world in worlds:
         time.sleep(1)
         masterDict[world] = buildWorld(world, items)
@@ -73,7 +104,21 @@ def main():
     with open("test.json", 'w') as file:
         json.dump(masterDict, file, indent=4)
 
+    # with open("test.json", 'r') as file:
+    #     masterDict = json.load(file)
 
+
+
+    arbit = arbitrage(masterDict, items, homeWorld)
+
+    for key in arbit:
+        print(f"{key} was found on following worlds for cheaper prices than on {homeWorld}: \n", end='')
+        for instance in arbit[key]:
+            world = instance[0]
+            cost = instance[1]
+            profit = instance[2]
+            print(f"\t{world}: {cost}, profit +{profit}")
+        print("---------------------------------------------\n", end='')
 
     return
 
