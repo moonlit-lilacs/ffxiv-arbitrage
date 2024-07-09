@@ -2,6 +2,24 @@ import requests
 import json
 import re
 import time
+import tkinter as tk
+from tkinter import ttk
+
+
+dcServerDict = {
+    "Aether" : ["Adamantoise", "Cactuar", "Faerie", "Gilgamesh", "Jenova", "Midgardsormr", "Sargantanas", "Siren"],
+    "Crystal" : ["Balmung", "Brynhildr", "Coeurl", "Diabolos", "Goblin", "Malboro", "Mateus", "Zalera"],
+    "Dynamis": ["Cuchulainn", "Golem", "Halicarnassus", "Kraken", "Maduin", "Marilith", "Rafflesia", "Seraph"],
+    "Primal" : ["Behemoth", "Excalibur", "Exodus", "Famfrit", "Hyperion", "Lamia", "Leviathan", "Ultros"],
+    "Chaos" : ["Cerberus", "Louisoix", "Moogle", "Omega", "Phantom", "Ragnarok", "Sagittarius", "Spriggan"],
+    "Light" : ["Alpha", "Lich", "Odin", "Phoenix", "Raiden", "Shiva", "Twintania", "Zodiark"],
+    "Shadow" : ["Innocence", "Pixie", "Titania", "Tycoon"],
+    "Materia" : ["Bismarck", "Ravana", "Sephirot", "Sophia", "Zurvan"],
+    "Elemental" : ["Aegis", "Atomos", "Carbuncle", "Garuda","Gungnir","Kujata","Tonberry","Typhon"],
+    "Gaia" : ["Aexander", "Bahamut", "Durandal","Fenrir","Ifrit","Ridill","Tiamat","Ultima"],
+    "Mana" : ["Anima","Asura","Chocobo","Hades","Ixion","Masamune","Pandaemonium","Titan"],
+    "Meteor" : ["Belias", "Mandragora","Ramuh","Shinryu","Unicorn","Valefor","Yojimbo","Zeromus"]
+}
 
 
 #priceBuilder takes in a jsonObject given to us by the Universalis API and turns it into a dictionary which gives us each item, its
@@ -88,6 +106,11 @@ def arbitrage(dict, items, homeWorld):
         arbit[item] = sorted(data, key=lambda x : x[2])
     return arbit
 
+previousSelection = -1
+
+
+
+
 
 def main():
     masterDict = {}
@@ -96,29 +119,143 @@ def main():
     homeWorld = "Seraph"
 
 
-    for world in worlds:
-        time.sleep(1)
-        masterDict[world] = buildWorld(world, items)
-        time.sleep(1)
+    # for world in worlds:
+    #     time.sleep(1)
+    #     masterDict[world] = buildWorld(world, items)
+    #     time.sleep(1)
     
-    with open("test.json", 'w') as file:
-        json.dump(masterDict, file, indent=4)
+    # with open("test.json", 'w') as file:
+    #     json.dump(masterDict, file, indent=4)
 
-    # with open("test.json", 'r') as file:
-    #     masterDict = json.load(file)
+    with open("test.json", 'r') as file:
+        masterDict = json.load(file)
 
 
 
     arbit = arbitrage(masterDict, items, homeWorld)
 
-    for key in arbit:
-        print(f"{key} was found on following worlds for cheaper prices than on {homeWorld}: \n", end='')
-        for instance in arbit[key]:
-            world = instance[0]
-            cost = instance[1]
-            profit = instance[2]
-            print(f"\t{world}: {cost}, profit +{profit}")
-        print("---------------------------------------------\n", end='')
+    # for key in arbit:
+    #     print(f"{key} was found on following worlds for cheaper prices than on {homeWorld}: \n", end='')
+    #     for instance in arbit[key]:
+    #         world = instance[0]
+    #         cost = instance[1]
+    #         profit = instance[2]
+    #         print(f"\t{world}: {cost}, profit +{profit}")
+    #     print("---------------------------------------------\n", end='')
+
+
+    root = tk.Tk()
+
+    root.title("FFXIV Arbitrage Tool")
+    root.geometry("800x800")
+
+
+    root.style = ttk.Style()
+    root.style.theme_use('clam')
+
+    root.style.configure("TLabel", background="#2e2e2e", foreground="#ffffff")
+    root.style.configure("TButton", background="#444444", foreground="#ffffff")
+    root.style.configure("TEntry", fieldbackground="#2e2e2e", foreground="#ffffff")
+    root.style.configure("TFrame", background="#2e2e2e")
+    root.style.map("TButton",
+          background=[("active", "#666666"), ("pressed", "#444444")])
+
+    root.frame = ttk.Frame(root,padding="10")
+    root.frame.pack(fill=tk.BOTH,expand=True)
+
+    label = ttk.Label(root.frame, text="Select Data Center")
+    label.pack(pady=2)
+    dataCenter = tk.StringVar()
+    root.dataCenters = ttk.Combobox(root.frame, width=27, textvariable=dataCenter)
+    root.dataCenters['values'] = ("Aether", "Crystal", "Dynamis", "Primal", "Chaos", "Light","Shadow","Materia","Elemental","Gaia","Mana","Meteor")
+    root.dataCenters.pack(pady=10)
+    root.dataCenters.current()
+
+    server = tk.StringVar()
+    root.servers = ttk.Combobox(root.frame, width=27, textvariable=server)
+    root.servers.pack(pady=10)
+
+    def updateServers(event):
+            global previousSelection
+
+            selectedValue = root.dataCenters.current()
+            values = []
+
+            if selectedValue != previousSelection:
+                match selectedValue:
+                    case 0:
+                        values = ["Adamantoise", "Cactuar", "Faerie", "Gilgamesh", "Jenova", "Midgardsormr", "Sargantanas", "Siren"]
+                    case 1:
+                        values = ["Balmung", "Brynhildr", "Coeurl", "Diabolos", "Goblin", "Malboro", "Mateus", "Zalera"]
+                    case 2:
+                        values = ["Cuchulainn", "Golem", "Halicarnassus", "Kraken", "Maduin", "Marilith", "Rafflesia", "Seraph"]
+                    case 3:
+                        values = ["Behemoth", "Excalibur", "Exodus", "Famfrit", "Hyperion", "Lamia", "Leviathan", "Ultros"]
+                    case 4:
+                        values = ["Cerberus", "Louisoix", "Moogle", "Omega", "Phantom", "Ragnarok", "Sagittarius", "Spriggan"]
+                    case 5:
+                        values = ["Alpha", "Lich", "Odin", "Phoenix", "Raiden", "Shiva", "Twintania", "Zodiark"]
+                    case 6:
+                        values = ["Innocence", "Pixie", "Titania", "Tycoon"]
+                    case 7:
+                        values = ["Bismarck", "Ravana", "Sephirot", "Sophia", "Zurvan"]
+                    case 8:
+                        values = ["Aegis", "Atomos", "Carbuncle", "Garuda","Gungnir","Kujata","Tonberry","Typhon"]
+                    case 9:
+                        values = ["Aexander", "Bahamut", "Durandal","Fenrir","Ifrit","Ridill","Tiamat","Ultima"]
+                    case 10:
+                        values = ["Anima","Asura","Chocobo","Hades","Ixion","Masamune","Pandaemonium","Titan"]
+                    case 11:
+                        values = ["Belias", "Mandragora","Ramuh","Shinryu","Unicorn","Valefor","Yojimbo","Zeromus"]
+
+                root.servers['values'] = values
+                root.servers.set('')
+                previousSelection = selectedValue
+
+    root.dataCenters.bind("<<ComboboxSelected>>", updateServers)
+
+    def closeComboboxDropdown(event):
+        if (root.focus_get() != root.dataCenters) and (root.focus_get() != root.servers):    
+            print("closing combobox dropdowns...")
+            root.dataCenters.event_generate('<Escape>')
+            root.servers.event_generate('<Escape>')
+
+    root.bind("<FocusOut>", closeComboboxDropdown)
+    #root.bind("<Alt-Tab>", closeComboboxDropdown)
+
+
+    items = tk.StringVar()
+    itemBox = ttk.Entry(root.frame, textvariable=items)
+    itemBox.pack(pady=10)
+
+    arbitButton = ttk.Button(root.frame, text="Execute")
+    arbitButton.pack(pady=10)
+
+    def on_button_click():
+        if((not root.dataCenters.get()) or (not server.get()) or (not itemBox.get())):
+            return
+        worlds = dcServerDict[root.dataCenters.get()]
+        homeWorld = server.get()
+        selectedItems = itemBox.get()
+        print(f"Worlds: {worlds}")
+        url = "https://universalis.app/api/v2/" + "/" + selectedItems + "?listings=5&entries=0&fields=items.listings.pricePerUnit,items.listings.quantity,items.listings.tax,items.listings.total"
+        print(url)
+        print(f"Selected homeworld: {homeWorld}")
+        return
+
+
+    
+    arbitButton.config(command=on_button_click)
+
+
+
+    
+    root.mainloop()
+    
+
+
+
+
 
     return
 
