@@ -5,6 +5,7 @@ import time
 import tkinter as tk
 from tkinter import ttk
 
+#A simply dictionary caching which servers are in which data center for use later.
 
 dcServerDict = {
     "Aether" : ["Adamantoise", "Cactuar", "Faerie", "Gilgamesh", "Jenova", "Midgardsormr", "Sargantanas", "Siren"],
@@ -73,18 +74,6 @@ def buildWorld(world, items):
 
     return priceBuilder(data, items)
 
-def get_user_int(prompt, default_value=-1):
-    while True:
-        inp = input(prompt)
-    
-        if (inp == '') and (default_value != -1):
-            return default_value
-        try:
-            value = int(inp)
-            return value
-        except ValueError:
-            print("Not an integer")
-
 def arbitrage(dict, items, homeWorld):
     arbit = {}
     for item in items:
@@ -109,9 +98,6 @@ def arbitrage(dict, items, homeWorld):
 previousSelection = -1
 
 
-
-
-
 def main():
     masterDict = {}
     worlds = ["Seraph","Kraken","Cuchulainn","Halicarnassus", "Maduin"]
@@ -129,8 +115,6 @@ def main():
 
     with open("test.json", 'r') as file:
         masterDict = json.load(file)
-
-
 
     arbit = arbitrage(masterDict, items, homeWorld)
 
@@ -160,76 +144,107 @@ def main():
     root.style.map("TButton",
           background=[("active", "#666666"), ("pressed", "#444444")])
 
-    root.frame = ttk.Frame(root,padding="10")
-    root.frame.pack(fill=tk.BOTH,expand=True)
+    root.mainFrame = ttk.Frame(root,padding="10")
+    root.mainFrame.grid(row=0,column=0,sticky="nsew")
 
-    label = ttk.Label(root.frame, text="Select Data Center")
-    label.pack(pady=2)
+    root.grid_rowconfigure(0,weight=1)
+    root.grid_columnconfigure(0,weight=1)
+
+    root.leftFrame = ttk.Frame(root.mainFrame,padding="10")
+    root.leftFrame.grid(row=0,column=0,sticky="n")
+
+    root.rightFrame = ttk.Frame(root.mainFrame,padding="10")
+    root.rightFrame.grid(row=0,column=1,sticky="nsew")
+
+    root.mainFrame.grid_rowconfigure(0,weight=1)
+    root.mainFrame.grid_columnconfigure(1,weight=1)
+
+        
+
+    label = ttk.Label(root.leftFrame, text="Select Data Center")
+    label.grid(row=0,column=0,pady=10,sticky="ew")
     dataCenter = tk.StringVar()
-    root.dataCenters = ttk.Combobox(root.frame, width=27, textvariable=dataCenter)
+    root.dataCenters = ttk.Combobox(root.leftFrame, textvariable=dataCenter)
     root.dataCenters['values'] = ("Aether", "Crystal", "Dynamis", "Primal", "Chaos", "Light","Shadow","Materia","Elemental","Gaia","Mana","Meteor")
-    root.dataCenters.pack(pady=10)
+    root.dataCenters.grid(row=1,column=0,pady=10,sticky="ew")
     root.dataCenters.current()
 
     server = tk.StringVar()
-    root.servers = ttk.Combobox(root.frame, width=27, textvariable=server)
-    root.servers.pack(pady=10)
+    root.servers = ttk.Combobox(root.leftFrame, textvariable=server)
+    root.servers.grid(row=2,column=0,pady=10,sticky="ew")
 
     def updateServers(event):
             global previousSelection
-
             selectedValue = root.dataCenters.current()
             values = []
 
+            #To prevent de-selecting homeworld when you switch from a data center to the same
+            #data center, we check if our results actually differ before we do any work.
             if selectedValue != previousSelection:
                 match selectedValue:
                     case 0:
-                        values = ["Adamantoise", "Cactuar", "Faerie", "Gilgamesh", "Jenova", "Midgardsormr", "Sargantanas", "Siren"]
+                        values = dcServerDict['Aether']
                     case 1:
-                        values = ["Balmung", "Brynhildr", "Coeurl", "Diabolos", "Goblin", "Malboro", "Mateus", "Zalera"]
+                        values = dcServerDict['Crystal']
                     case 2:
-                        values = ["Cuchulainn", "Golem", "Halicarnassus", "Kraken", "Maduin", "Marilith", "Rafflesia", "Seraph"]
+                        values = dcServerDict['Dynamis']
                     case 3:
-                        values = ["Behemoth", "Excalibur", "Exodus", "Famfrit", "Hyperion", "Lamia", "Leviathan", "Ultros"]
+                        values = dcServerDict['Primal']
                     case 4:
-                        values = ["Cerberus", "Louisoix", "Moogle", "Omega", "Phantom", "Ragnarok", "Sagittarius", "Spriggan"]
+                        values = dcServerDict['Chaos']
                     case 5:
-                        values = ["Alpha", "Lich", "Odin", "Phoenix", "Raiden", "Shiva", "Twintania", "Zodiark"]
+                        values = dcServerDict['Light']
                     case 6:
-                        values = ["Innocence", "Pixie", "Titania", "Tycoon"]
+                        values = dcServerDict['Shadow']
                     case 7:
-                        values = ["Bismarck", "Ravana", "Sephirot", "Sophia", "Zurvan"]
+                        values = dcServerDict['Materia']
                     case 8:
-                        values = ["Aegis", "Atomos", "Carbuncle", "Garuda","Gungnir","Kujata","Tonberry","Typhon"]
+                        values = dcServerDict['Elemental']
                     case 9:
-                        values = ["Aexander", "Bahamut", "Durandal","Fenrir","Ifrit","Ridill","Tiamat","Ultima"]
+                        values = dcServerDict['Gaia']
                     case 10:
-                        values = ["Anima","Asura","Chocobo","Hades","Ixion","Masamune","Pandaemonium","Titan"]
+                        values = dcServerDict['Mana']
                     case 11:
-                        values = ["Belias", "Mandragora","Ramuh","Shinryu","Unicorn","Valefor","Yojimbo","Zeromus"]
+                        values = dcServerDict['Meteor']
 
+                #Sets the servers available from the data center, clears the homeworld, and sets
+                #our selection as the previous selection so we don't clear if we select the same
+                #thing again.
                 root.servers['values'] = values
                 root.servers.set('')
                 previousSelection = selectedValue
 
+    #When we select an option, update the servers available.
     root.dataCenters.bind("<<ComboboxSelected>>", updateServers)
 
     def closeComboboxDropdown(event):
-        if (root.focus_get() != root.dataCenters) and (root.focus_get() != root.servers):    
-            print("closing combobox dropdowns...")
-            root.dataCenters.event_generate('<Escape>')
-            root.servers.event_generate('<Escape>')
+        #On focus loss, we check if our focus is on our two comboboxes. If it is, we
+        #ignore it and return without doing anything. If it isn't, we generate an escape event
+        #to close the dropdown menus. This is buggy on windows and in some ways on Unix systems,
+        #but I'll come back to polish it later.
+        try:
+            if (root.focus_get() != root.dataCenters) and (root.focus_get() != root.servers):    
+                root.dataCenters.event_generate('<Escape>')
+                root.servers.event_generate('<Escape>')
+        
+        #We have to ignore keyerrors here because the comboboxes' popdown arrow throws errors for 
+        #the focus_get() function. However, this only happens for those popdown arrows and in that
+        #case, we don't want anything to happen anyway, so we can safely ignore it.
+        except KeyError:
+            return
 
+
+    #Close the dropdown when we're not focusing on the application, getting rid of the annoying
+    #menu artefacts.
     root.bind("<FocusOut>", closeComboboxDropdown)
-    #root.bind("<Alt-Tab>", closeComboboxDropdown)
 
 
     items = tk.StringVar()
-    itemBox = ttk.Entry(root.frame, textvariable=items)
-    itemBox.pack(pady=10)
+    itemBox = ttk.Entry(root.leftFrame, textvariable=items)
+    itemBox.grid(row=3,column=0,pady=10,sticky="ew")
 
-    arbitButton = ttk.Button(root.frame, text="Execute")
-    arbitButton.pack(pady=10)
+    arbitButton = ttk.Button(root.leftFrame, text="Execute")
+    arbitButton.grid(row=4,column=0,pady=10,sticky="ew")
 
     def on_button_click():
         if((not root.dataCenters.get()) or (not server.get()) or (not itemBox.get())):
@@ -237,26 +252,23 @@ def main():
         worlds = dcServerDict[root.dataCenters.get()]
         homeWorld = server.get()
         selectedItems = itemBox.get()
-        print(f"Worlds: {worlds}")
-        url = "https://universalis.app/api/v2/" + "/" + selectedItems + "?listings=5&entries=0&fields=items.listings.pricePerUnit,items.listings.quantity,items.listings.tax,items.listings.total"
+        print(f"Worlds to query: {worlds}")
+        url = "https://universalis.app/api/v2/" + homeWorld + "/" + selectedItems + "?listings=5&entries=0&fields=items.listings.pricePerUnit,items.listings.quantity,items.listings.tax,items.listings.total"
         print(url)
         print(f"Selected homeworld: {homeWorld}")
         return
 
-
-    
     arbitButton.config(command=on_button_click)
 
+    placeHolder = ttk.Label(root.rightFrame, text="Test")
+    placeHolder.grid(row=0,column=0,sticky="nsew")
+
+    root.rightFrame.grid_rowconfigure(0, weight=1)
+    root.rightFrame.grid_columnconfigure(0,weight=1)
 
 
     
     root.mainloop()
-    
-
-
-
-
-
     return
 
 if __name__ == "__main__":
