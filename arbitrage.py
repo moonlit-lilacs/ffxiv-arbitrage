@@ -7,7 +7,7 @@ from tkinter import ttk
 import argparse
 
 
-DEBUG = 1
+DEBUG = 0
 
 #A simply dictionary caching which servers are in which data center for use later.
 
@@ -140,7 +140,7 @@ def main():
     root = tk.Tk()
 
     root.title("FFXIV Arbitrage Tool")
-    root.geometry("800x800")
+    root.geometry("1600x900")
 
 
     root.style = ttk.Style()
