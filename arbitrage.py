@@ -4,6 +4,10 @@ import re
 import time
 import tkinter as tk
 from tkinter import ttk
+import argparse
+
+
+DEBUG = 1
 
 #A simply dictionary caching which servers are in which data center for use later.
 
@@ -30,6 +34,8 @@ dcServerDict = {
 #us traverse a master dictionary to compare prices. If it's organized more easily to query a data-center, we'll consider that.
 def priceBuilder(jsonObject, items):
     priceDict = {}
+    print(jsonObject)
+    print("price building...")
     keys = list(jsonObject.keys())
     if (keys[0] == "items"):
         for item in items:
@@ -57,10 +63,13 @@ def priceBuilder(jsonObject, items):
     return priceDict
 
 def buildWorld(world, items):
+
+    print(f"building {world}...")
     baseURL = "https://universalis.app/api/v2/"
 
-    usrItems = ','.join(items)
 
+    usrItems = ','.join(map(str, items))
+    
     url = baseURL + world + "/" + usrItems + "?listings=5&entries=0&fields=items.listings.pricePerUnit,items.listings.quantity,items.listings.tax,items.listings.total"
 
     try:
@@ -72,10 +81,11 @@ def buildWorld(world, items):
     except json.JSONDecodeError as e:
         print(f"Request error {e}")
 
-    return priceBuilder(data, items)
+    return priceBuilder(data, map(str,items))
 
 def arbitrage(dict, items, homeWorld):
     arbit = {}
+
     for item in items:
         data = []
         homeItemCost = float(dict[homeWorld][item]['avgCost'])
@@ -91,18 +101,17 @@ def arbitrage(dict, items, homeWorld):
                 if worldItemCost < homeItemCost:
                     profit = homeItemCost-worldItemCost
                     #print(f"Found {item} in {world} where {item} costs {dict[world][item]['avgCost']} on {world} and {str(homeItemCost)} on {homeWorld}, for an arbitrage of {str(profit)}")
-                    data.append((world, worldItemCost, profit))
-        arbit[item] = sorted(data, key=lambda x : x[2])
+                    data.append((item, world, round(worldItemCost,2), round(profit,2)))
+        arbit[item] = sorted(data, key=lambda x : x[3])
     return arbit
 
 previousSelection = -1
-
+masterDict = {}
 
 def main():
-    masterDict = {}
-    worlds = ["Seraph","Kraken","Cuchulainn","Halicarnassus", "Maduin"]
-    items = ["5367", "5368", "5373", "5380", "5381", "5383", "5384", "5385", "5386", "5387", "5388", "5389", "5390", "5391", "5392", "5393", "5394"]
-    homeWorld = "Seraph"
+    # worlds = ["Seraph","Kraken","Cuchulainn","Halicarnassus", "Maduin"]
+    # items = ["5367", "5368", "5373", "5380", "5381", "5383", "5384", "5385", "5386", "5387", "5388", "5389", "5390", "5391", "5392", "5393", "5394"]
+    # homeWorld = "Seraph"
 
 
     # for world in worlds:
@@ -113,10 +122,10 @@ def main():
     # with open("test.json", 'w') as file:
     #     json.dump(masterDict, file, indent=4)
 
-    with open("test.json", 'r') as file:
-        masterDict = json.load(file)
+    # with open("test.json", 'r') as file:
+    #     masterDict = json.load(file)
 
-    arbit = arbitrage(masterDict, items, homeWorld)
+    # arbit = arbitrage(masterDict, items, homeWorld)
 
     # for key in arbit:
     #     print(f"{key} was found on following worlds for cheaper prices than on {homeWorld}: \n", end='')
@@ -246,27 +255,68 @@ def main():
     arbitButton = ttk.Button(root.leftFrame, text="Execute")
     arbitButton.grid(row=4,column=0,pady=10,sticky="ew")
 
-    def on_button_click():
-        if((not root.dataCenters.get()) or (not server.get()) or (not itemBox.get())):
-            return
-        worlds = dcServerDict[root.dataCenters.get()]
-        homeWorld = server.get()
-        selectedItems = itemBox.get()
-        print(f"Worlds to query: {worlds}")
-        url = "https://universalis.app/api/v2/" + homeWorld + "/" + selectedItems + "?listings=5&entries=0&fields=items.listings.pricePerUnit,items.listings.quantity,items.listings.tax,items.listings.total"
-        print(url)
-        print(f"Selected homeworld: {homeWorld}")
-        return
+    dataTable = ttk.Treeview(root.rightFrame, columns=("item","world","price","profit"), show="headings")
+    dataTable.heading("item", text="Item")
+    dataTable.heading("world", text="World")
+    dataTable.heading("price", text="(Avg) Price")
+    dataTable.heading("profit",text="(Avg) Profit")
 
-    arbitButton.config(command=on_button_click)
 
-    placeHolder = ttk.Label(root.rightFrame, text="Test")
-    placeHolder.grid(row=0,column=0,sticky="nsew")
+    hScrollBar = ttk.Scrollbar(root.rightFrame, orient="horizontal",command=dataTable.xview)
+    vScrollBar = ttk.Scrollbar(root.rightFrame, orient="vertical", command=dataTable.yview)
+    dataTable.configure(yscrollcommand=vScrollBar.set, xscrollcommand=hScrollBar.set)
+    
+    dataTable.grid(row=0,column=0,sticky="nsew")
+    hScrollBar.grid(row=1,column=0,sticky="ew")
+    vScrollBar.grid(row=0,column=1,sticky="ns")
 
     root.rightFrame.grid_rowconfigure(0, weight=1)
     root.rightFrame.grid_columnconfigure(0,weight=1)
 
 
+    def on_button_click():
+        arbitButton.config(state=tk.DISABLED)
+        print("button pressed")
+        # Clear masterDict to ensure that data from previous queries isn't considered in our
+        #current query.
+        global masterDict
+        masterDict.clear()
+
+        # Check that fields are appropriately filled out before grabbing appropriate values.
+        if((not root.dataCenters.get()) or (not server.get()) or (not itemBox.get())):
+            return
+        worlds = dcServerDict[root.dataCenters.get()]
+        homeWorld = server.get()
+        selectedItems = [int(x) for x in itemBox.get().replace(' ','').split(',')]
+
+        # We would love to query the data center once, but it doesn't provide the home world for each
+        #entry, so we are forced to query each world instead. Additionally, we add 2 seconds of stall
+        #time to ensure that we cause *as little strain as possible* on a server I don't pay for.
+        for world in worlds:
+            time.sleep(1)
+            masterDict[world] = buildWorld(world, selectedItems)
+            time.sleep(1)
+        
+        # If we're debugging, then we dump data into a file for inspection.
+        if (DEBUG):
+            with open("debug.json", 'w') as file:
+                json.dump(masterDict, file, indent=4)
+            print("json dumped")
+        
+        arbit = arbitrage(masterDict, map(str, selectedItems), homeWorld)
+        print("arbit has been created...")
+        for key in arbit:
+            print(f"{key}")
+            print(f"{arbit[key]}")
+            for instance in arbit[key]:
+                print(instance)
+                dataTable.insert('',tk.END,values=instance)
+        print("data inserted...")
+        arbitButton.config(state=tk.NORMAL)        
+        return
+
+    arbitButton.config(command=on_button_click)
+    
     
     root.mainloop()
     return
